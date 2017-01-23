@@ -65,7 +65,7 @@ class Bdot_pair:
     def integrate(self):
         self.B=scipy.integrate.cumtrapz(self.dBdt,self.time)/1e9
         self.time_B=self.time[:-1]
-    def plot(self, data, ax=None, flip=1, bdname=None):
+    def plot(self, data, ax=None, flip=1, bdname=None, color="red"):
         if ax is None:
             fig, ax=plt.subplots()
         if bdname is not None:
@@ -94,9 +94,10 @@ class Bdot_pair:
             d1=self.B
             d2=None
             l1=bdname+' Magnetic Field'
-        ax.plot(t, flip*d1, label=l1, lw=4)
+        ax.plot(t, flip*d1, label=l1, lw=4, color=color)
         if d2 is not None:
-            ax.plot(t, flip*d2, label=l2, lw=4)
+            color2='y'
+            ax.plot(t, flip*d2, label=l2, lw=4, color=color2)
         ax.legend()
         
 class Bdots:
@@ -111,8 +112,8 @@ class Bdots:
             self.bd[k]=Bdot_pair(shot, scope, bdot1=bd1, bdot2=bd2)
             self.bd[k].truncate(threshold=threshold,cal=calibration)
             self.bd[k].integrate()
-    def plot(self, name, data, ax=None, flip=1):
-        self.bd[name].plot(data, ax, flip, bdname=name)
+    def plot(self, name, data, ax=None, flip=1, color='red'):
+        self.bd[name].plot(data, ax, flip, bdname=name, color=color)
     def plot_raw(self, name):
         self.bd[name].plot_raw()
     def plot_estat_dBdt(self, name):

@@ -1,4 +1,5 @@
 from SourceCode.Bdots import *
+import numpy
 
 class Rogowskis:
     def __init__(self, shot, returnPosts, threshold=0.25, attenuators =[10*10.4, -10.48*10.79] ):
@@ -8,11 +9,19 @@ class Rogowskis:
         #rogowski 1 and 2
         self.bd1=ScopeChannel(shot, '2', 'c1')
         self.bd2=ScopeChannel(shot, '2', 'c2')
+        self.time=self.bd1.time[self.start:self.start+window]
         self.truncate(threshold)
         self.integrate()
         #output data
         print("Current start: "+str( self.time[0] )+" ns")
         print("Peak current: "+str(self.Imax)+" MA")
+    def zeroData
+    def getCurrentStart(self):
+        #the first 200 data points are noise, use that to find our noise range
+        
+        np
+        
+        #find the noise floor
     def truncate(self, threshold=0.25, window=1000, cal=[3e9,3e9]):
         #find the start of the current pulse with a  high threshold
         sig1=self.bd1.data
@@ -23,7 +32,7 @@ class Rogowskis:
         z1=np.mean(self.bd1.data[0:200]) 
         z2=np.mean(self.bd2.data[0:200])
         #truncate arrays
-        self.time=self.bd1.time[self.start:self.start+window]
+        
         self.bd1_tr=(self.bd1.data[self.start:self.start+window]-z1)
         self.bd2_tr=(self.bd2.data[self.start:self.start+window]-z2)
         #multiply by scale factors to get dI/dt
