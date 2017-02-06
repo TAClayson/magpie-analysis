@@ -1,6 +1,29 @@
 #class for managing optical framing camera and images
 #assumes the images are located in a subfolder with a background and shot subfolder
 
+#__init__(self, shotName, start, IF)
+    #sets up the camera, searches for the images and loads them all
+    #shotName as a string
+    #start = start time in ns
+    #IF = inter-frame time in ns
+#plot(self, toPlot="shots" array=None, frame=1, clim=None, ax=None)
+    #plots a single image
+    #toPlot = string specifying what to plot
+        #"shot" = shot images
+        #"background" = background images
+        #"raw" = raw shot images
+    #array = manually pass the array of images
+    #frame = frame to plot, 1 to 12
+#plot_sequence(self, toPlot="shot", array=None, frames=list(range(1,13)), clim=None, figsize=None)
+    #plots a sequence of images
+    #toPlot = string specifying what to plot
+        #"shot" = shot images
+        #"background" = background images
+        #"raw" = raw shot images
+    #array = manually pass the array of images
+    #frames = frames to plot, 1 to 12
+    
+
 import numpy as np
 import os
 import numpy as np
@@ -37,12 +60,16 @@ class OpticalFrames:
         if self.folder=="": #do we have a folder?
             print("No optical framing folder found")
             return
+        else:
+            print("Optical frame folder found: "+self.folder)
         
         self.start=start
         self.IF=IF
         self.frame_times=np.arange(start, start+12*IF, IF)
         self.load_images()
         self.normalise()
+        
+        
         
     def load_images(self):
         backgrounds=[]
@@ -71,15 +98,18 @@ class OpticalFrames:
             shotPath = rootPath+"/shot"
         #load shot images
         if shotPath!="":
+            print("Searching: "+shotPath)
             for i in range(1,13):
                 if i<10:
                     st="_00"+str(i)
                 else:
                     st="_0"+str(i)
-                sh_fn=self.shotName+st+".tif"
+                sh_fn=shotPath+"/"+self.shotName+st+".tif"
                 if os.path.isfile(sh_fn):
                     sh_im=plt.imread(sh_fn)
                     shots.append(sh_im)
+                else:
+                    print("File missing: "+sh_fn)
 
         #find the background folder
         backPath = ""
@@ -91,52 +121,99 @@ class OpticalFrames:
             backPath = rootPath+"/ref"
         #load background images
         if shotPath!="":
+            print("Searching: "+shotPath)
             for i in range(1,13):
                 if i<10:
                     st="_00"+str(i)
                 else:
                     st="_0"+str(i)
-                sh_fn=self.shotName+st+".tif"
+                sh_fn=shotPath+"/"+self.shotName+st+".tif"
                 if os.path.isfile(sh_fn):
                     sh_im=plt.imread(sh_fn)
                     backgrounds.append(sh_im)
+                else:
+                    print("File missing: "+sh_fn)
            
         self.shots = shots
         self.backgrounds = backgrounds
+        
+        
+        
     def normalise(self):
-        norms=[b_im[100:-100,100:-100].sum() for b_im in self.backgrounds]
+        norms=[b_im.sum() for b_im in self.backgrounds] #sums over the background image to get a normal scale
         n_max=max(norms)
         nn=[n/n_max for n in norms]
-        self.s_n=[s_im[100:-100,100:-100]/n for s_im, n in zip(self.shots, nn)]
+        self.normalised=[s_im/n for s_im, n in zip(self.shots, nn)]
+        
+        
+        
     def logarithm(self, lv_min=-4, lv_max=0.2):
         self.s_l=[np.log(s_im) for s_im in self.s_n]
         self.s_nl=[(np.clip(s_im, a_min=lv_min, a_max=lv_max)-lv_min)/(lv_max-lv_min) for s_im in self.s_l]
+        
+        
+        
     def rotate(self, angle_deg=0):
         self.s_r=[rotate(s_im, angle_deg)for s_im in self.s_nl]
+        
+        
+        
     def crop(self, origin, xcrop=400, ycrop=400):
         x0=origin[1]
         y0=origin[0]
         self.origin=[ycrop,xcrop]
-        self.s_c=[s_im[y0-ycrop:y0+ycrop,x0-xcrop:x0+xcrop] for s_im in self.s_r]
-    def plot(self, array, frame=1, clim=None, ax=None):
+        self.s_c=[s_im[y0-ycrop:y0+ycrop,x0-xcrop:x0+xcrop] for s_im in self.s_r]        
+        
+        
+        
+    def plot(self, toPlot="shot", array=None, frame=1, clim=None, ax=None):
+        if array is None:
+            if toPlot is "shot":
+                array = self.normalised
+            elif toPlot is "background":
+                array = self.backgrounds
+            elif toPlot is "raw":
+                array = self.shots
+            
         fin=frame-1
         if ax is None:
             fig, ax=plt.subplots(figsize=(12,8))
         ax.imshow(array[fin], cmap='afmhot', clim=clim)
         ax.axis('off')
         ax.set_title('t='+str(self.frame_times[fin])+' ns', fontsize=22)
+        
+        
+        
     def plot_norm(self, frame=1, clim=None, ax=None):
         self.plot(self.s_n, frame=frame, clim=clim, ax=ax)
+        
+        
+        
     def plot_log(self, frame=1, clim=None, ax=None):
         self.plot(self.s_nl, frame=frame, clim=clim, ax=ax)
+        
+        
+        
     def plot_rot(self, frame=1, clim=None, ax=None):
         self.plot(self.s_r, frame=frame, clim=clim, ax=ax)
+        
+        
+        
     def plot_crop(self, frame=1, clim=None, ax=None):
         self.plot(self.s_c, frame=frame, clim=clim, ax=ax)
-    def plot_sequence(self, array=None, frames=list(range(1,13)), clim=None, figsize=None):
+        
+        
+        
+    def plot_sequence(self, toPlot="shot", array=None, frames=list(range(1,13)), clim=None, figsize=None):
         xframes=round(len(frames)/3)
         if array is None:
-            array=self.s_c
+            if toPlot is "raw":
+                array = self.shots
+            elif toPlot is "background":
+                array = self.backgrounds
+            elif toPlot is "shot":
+                array = self.normalised
+                
         if figsize is None:
             figsize=(xframes*4,16)
         fig, ax=plt.subplots(3,xframes, figsize=figsize)
@@ -147,13 +224,19 @@ class OpticalFrames:
             a.imshow(array[fn], cmap='afmhot', clim=clim)
             a.axis('off')
             a.set_title('t='+str(self.frame_times[fn])+' ns', fontsize=22)
-        fig.suptitle("Optical Framing images from "+self.shot, fontsize=32)
+        fig.suptitle("Optical framing images from "+self.shot.shotName, fontsize=32)
         fig.tight_layout(w_pad=0, h_pad=0)
         self.fig=fig
+        
+        
+        
     def save_sequence(self, filename=None):
         if filename is None:
             filename=self.shot+" frame sequence"
-        self.fig.savefig(filename+".png")        
+        self.fig.savefig(filename+".png")
+        
+        
+        
     def create_lineout(self, axis=0, frame=1,centre=None,average_over_px=20, mm_range=10, scale=29.1, ax=None):
         px_range=mm_range*scale
         fn=frame-1 #shift to 0 indexed arrays
@@ -171,6 +254,9 @@ class OpticalFrames:
         if ax is None:
             fig, ax=plt.subplots(figsize=(12,8))
         ax.plot(self.mm, self.lo, label='t='+str(self.frame_times[fn])+' ns', lw=4)
+        
+        
+        
     def make_movie(self, clim=[0,1]):
         w=6
         h=w/self.s_c[0].shape[1]*self.s_c[0].shape[0]
