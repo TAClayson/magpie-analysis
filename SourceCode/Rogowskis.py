@@ -52,6 +52,8 @@ class Rogowskis:
                 
         self.currentStart = (currentStart1+currentStart2)/2
         
+        
+        
     def truncate(self, window=500, cal=[3e9,3e9]):
         #zero the data
         z1=np.mean(self.bd1.data[0:200]) 
@@ -65,6 +67,9 @@ class Rogowskis:
         #multiply by scale factors to get dI/dt
         self.dIdt1 = self.bd1_tr*cal[0]*self.attenuators[0]
         self.dIdt2 = self.bd2_tr*cal[1]*self.attenuators[1]
+        
+        
+        
     def integrate(self, min_signal=5e4):
         #perform integration on both signals
         self.I1=scipy.integrate.cumtrapz(self.dIdt1,self.time)/1e9

@@ -26,7 +26,6 @@
 
 import numpy as np
 import os
-import numpy as np
 import matplotlib.pyplot as plt
 import scipy as sp
 import csv
@@ -168,12 +167,7 @@ class OpticalFrames:
         
     def plot(self, toPlot="shot", array=None, frame=1, clim=None, ax=None):
         if array is None:
-            if toPlot is "shot":
-                array = self.normalised
-            elif toPlot is "background":
-                array = self.backgrounds
-            elif toPlot is "raw":
-                array = self.shots
+            array = self.get_array(toPlot)
             
         fin=frame-1
         if ax is None:
@@ -202,17 +196,22 @@ class OpticalFrames:
     def plot_crop(self, frame=1, clim=None, ax=None):
         self.plot(self.s_c, frame=frame, clim=clim, ax=ax)
         
+    
+    
+    def get_array(self, name="shot"):
+        if name is "raw":
+            return self.shots
+        elif name is "background":
+            return self.background
+        elif name is "shot":
+            return self.normalised
+        
         
         
     def plot_sequence(self, toPlot="shot", array=None, frames=list(range(1,13)), clim=None, figsize=None):
         xframes=round(len(frames)/3)
         if array is None:
-            if toPlot is "raw":
-                array = self.shots
-            elif toPlot is "background":
-                array = self.backgrounds
-            elif toPlot is "shot":
-                array = self.normalised
+            array = self.get_array(toPlot)
                 
         if figsize is None:
             figsize=(xframes*4,16)
@@ -257,12 +256,15 @@ class OpticalFrames:
         
         
         
-    def make_movie(self, clim=[0,1]):
+    def make_movie(self, toPlot="shot", array=None, clim=[0,1]):
+        if array is None:
+            array = get_array(toPlot)
+            
         w=6
-        h=w/self.s_c[0].shape[1]*self.s_c[0].shape[0]
+        h=w/array[0].shape[1]*array[0].shape[0]
         fig, ax=plt.subplots(figsize=(w,h))
         hot_im=[]
-        for im in self.s_c:
+        for im in array:
             ax.imshow(im, cmap='afmhot', clim=clim)
             plt.axis('off')
             fig.tight_layout()
